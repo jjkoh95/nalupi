@@ -1,7 +1,6 @@
 package nalupi_test
 
 import (
-	"math/big"
 	"testing"
 
 	"github.com/jjkoh95/nalupi/pkg/nalupi"
@@ -24,23 +23,16 @@ func TestTenPower(t *testing.T) {
 	require.Equal(t, got, want, "Expect to get 10000000000")
 }
 
-func TestCalculatePIOneIteration(t *testing.T) {
-	Lk := nalupi.L0()
-	Xk := nalupi.X0()
-	Mk := nalupi.M0()
-	termNumerator := big.NewInt(0).Mul(Mk, Lk)
-	termDenominator := Xk
-	term := big.NewInt(0)
-	tempTerm := big.NewInt(0).Quo(termNumerator, termDenominator)
-	term = term.Add(term, tempTerm)
-
-	// 3.1415
-	// precision here is required to get the values
-	// since we are taking big.Int instead of float
-	var precision int64 = 100
-	C := nalupi.C(precision)
-	inverseTerm := nalupi.OneOver(precision, term)
-	got := big.NewInt(0).Mul(C, inverseTerm).String()[:5]
+func TestCalculatePITo5Digits(t *testing.T) {
+	got := nalupi.CalculatePIWithPrecision(5).String()
+	got = got[:5]
 	want := "31415"
 	require.Equal(t, want, got, "Expect to get first 5 digits of PI correctly with one iteration")
+}
+
+func TestCalculatePITo100Digits(t *testing.T) {
+	got := nalupi.CalculatePIWithPrecision(100).String()
+	got = got[:100]
+	want := "3141592653589793238462643383279502884197169399375105820974944592307816406286208998628034825342117067"
+	require.Equal(t, want, got, "Expect to get the first 100 digits of PI correctly")
 }

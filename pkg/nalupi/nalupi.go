@@ -29,6 +29,7 @@ func X0() *big.Int {
 
 // Xplusone computes X[k+1]
 func Xplusone(val *big.Int) *big.Int {
+	// 262537412640768000 = length of 18
 	Xd := big.NewInt(-262537412640768000) // int64 can hold this
 	return big.NewInt(0).Mul(val, Xd)
 }
@@ -40,13 +41,17 @@ func M0() *big.Int {
 
 // Mplusone computes M[k+1]
 func Mplusone(Mk, Kk, k *big.Int) *big.Int {
-	numerator := big.NewInt(0).Exp(Kk, big.NewInt(3), nil)                     // Kk^3
-	numerator = numerator.Sub(numerator, big.NewInt(0).Mul(big.NewInt(16), k)) // Kk^3 - 16Kk
-	denominator := big.NewInt(0).Add(k, big.NewInt(1))                         // k + 1
-	denominator = denominator.Exp(denominator, big.NewInt(3), nil)             // (k + 1)^3
+	numerator := big.NewInt(0)
+	numerator.Exp(Kk, big.NewInt(3), nil)                           // Kk^3
+	numerator.Sub(numerator, big.NewInt(0).Mul(big.NewInt(16), Kk)) // Kk^3 - 16Kk
+	denominator := big.NewInt(0)
+	denominator.Add(k, big.NewInt(1))                // k + 1
+	denominator.Exp(denominator, big.NewInt(3), nil) // (k + 1)^3
 	// we are guaranteed this will be integer
-	temp := big.NewInt(0).Quo(numerator, denominator)
-	return big.NewInt(0).Mul(Mk, temp)
+	res := big.NewInt(0)
+	res.Mul(numerator, Mk)
+	res.Quo(res, denominator)
+	return res
 }
 
 // K0 is the zero-th term for K
@@ -62,18 +67,52 @@ func Kplusone(val *big.Int) *big.Int {
 
 // C returns C value multiplied 10^factor
 func C(factor int64) *big.Int {
-	pow := TenPower(factor)
-	t1 := big.NewInt(426880)
+	res := TenPower(2 * factor) // square this to make precision
+	t1 := big.NewInt(426880 * 426880)
 	t2 := big.NewInt(10005)
-	t2.Mul(t2, pow)
-	t2.Sqrt(t2)
-	return big.NewInt(0).Mul(t1, t2)
+	res.Mul(res, t1)
+	res.Mul(res, t2)
+	res = res.Sqrt(res)
+	return res
 }
 
 // OneOver returns 10^factor/term
 func OneOver(factor int64, term *big.Int) *big.Int {
 	pow := TenPower(factor)
 	return big.NewInt(0).Div(pow, term)
+}
+
+// CalculatePIWithPrecision computes PI to precision as defined
+func CalculatePIWithPrecision(precision int64) *big.Int {
+	runningSum := big.NewInt(0)
+	Lk := L0()
+	Xk := X0()
+	Mk := M0()
+	Kk := K0()
+	k := big.NewInt(0)
+	multiplier := precision
+	C0 := C(multiplier)
+	for {
+		termVal := TenPower(multiplier)
+		termVal.Mul(termVal, Lk)
+		termVal.Mul(termVal, Mk)
+		termVal.Quo(termVal, Xk)
+		// termVal = Mk * Lk / Xk
+		// if the term is 0, stop, since further computation is not doing anything
+		if termVal.Cmp(big.NewInt(0)) == 0 {
+			break
+		}
+		runningSum.Add(runningSum, termVal)
+		Lk = Lplusone(Lk)
+		Xk = Xplusone(Xk)
+		Mk = Mplusone(Mk, Kk, k)
+		Kk = Kplusone(Kk)
+		k.Add(k, big.NewInt(1))
+	}
+	res := TenPower(precision)
+	res = res.Mul(res, C0)
+	res = res.Quo(res, runningSum)
+	return res
 }
 
 // CalculatePI calculates PI using Chudnovsky algorithm
