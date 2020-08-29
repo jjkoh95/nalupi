@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -13,9 +14,16 @@ import (
 	"github.com/jjkoh95/nalupi/pkg/recipi"
 )
 
+type MutexStore struct {
+	sync.Mutex
+	IsExecuting bool
+}
+
 // New generates a new http.Server instance
 func New() *http.Server {
 	r := mux.NewRouter()
+
+	var mutexStore = MutexStore{IsExecuting: false}
 
 	// health check
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -31,6 +39,18 @@ func New() *http.Server {
 	})
 
 	r.HandleFunc("/pi/trigger", func(w http.ResponseWriter, r *http.Request) {
+		if mutexStore.IsExecuting {
+			w.Write([]byte("Request executing"))
+			return
+		}
+
+		mutexStore.Lock()
+		defer mutexStore.Unlock()
+		defer func() {
+			mutexStore.IsExecuting = false
+		}()
+		mutexStore.IsExecuting = true
+
 		k, Lk, Xk, Mk, Kk, err := recipi.GetSnapshot()
 		if err != nil {
 			w.Write([]byte("Unable to get snapshot"))
@@ -45,7 +65,7 @@ func New() *http.Server {
 		}
 
 		fractionSum, err := recipi.LoadFractionMeta(precision + 1)
-		fmt.Println(fractionSum)
+
 		if err != nil {
 			w.Write([]byte("Unable to read fraction meta"))
 			w.WriteHeader(http.StatusBadRequest)
@@ -63,8 +83,6 @@ func New() *http.Server {
 			tempTerm := big.NewInt(0).Mul(Lk, Mk)
 			recipi.SaveFractionMeta(tempTerm.String(), Xk.String())
 			tempTerm.Mul(tempTerm, nalupi.TenPower(precision+1))
-
-			fmt.Println(tempTerm, Xk)
 			tempTerm.Quo(tempTerm, Xk)
 			if tempTerm.Cmp(big.NewInt(0)) == 0 {
 				break
@@ -72,10 +90,11 @@ func New() *http.Server {
 			// else add to fraction
 			fractionSum.Add(fractionSum, tempTerm)
 		}
-		recipi.SaveSnapshot(k.String(), Lk.String(), Xk.String(), Kk.String(), Mk.String())
-		fmt.Println(fractionSum)
-		fractionSum.Quo(nalupi.C(precision+1), fractionSum)
-		recipi.SaveComputedPI(strconv.FormatInt(precision+1, 10), fractionSum.String())
+		recipi.SaveSnapshot(k.String(), Lk.String(), Xk.String(), Mk.String(), Kk.String())
+		res := nalupi.TenPower(precision + 1)
+		res.Mul(res, nalupi.C(precision+1))
+		res.Quo(res, fractionSum)
+		recipi.SaveComputedPI(strconv.FormatInt(precision+1, 10), res.String())
 		w.Write([]byte("Ok"))
 	})
 

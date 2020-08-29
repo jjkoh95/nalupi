@@ -23,7 +23,7 @@ func GetLastComputedPI() (precision int64, pi *big.Int, err error) {
 	if err != nil {
 		return 0, nil, err
 	}
-	precision, err = strconv.ParseInt(respBody[0][1], 10, 64)
+	precision, err = strconv.ParseInt(respBody[0][0], 10, 64)
 	if err != nil {
 		return 0, nil, errors.New("Unable to convert string to big.Int")
 	}
@@ -37,10 +37,16 @@ func GetLastComputedPI() (precision int64, pi *big.Int, err error) {
 
 // SaveComputedPI append an entry to permanent storage of PI
 func SaveComputedPI(precision, pi string) error {
+	client := &http.Client{}
 	reqBody := [][]string{{precision, pi}}
-	url := "https://nalusi-b235sdkoha-de.a.run.app/nalupi?spreadsheetID=1YnXZwX5ABPmBUFhktGVLDVnmgluVgSMFjIkMyIJ8Lt0&a1Range=Data"
+	url := "https://nalusi-b235sdkoha-de.a.run.app/nalupi?spreadsheetID=1YnXZwX5ABPmBUFhktGVLDVnmgluVgSMFjIkMyIJ8Lt0&a1Range=Data!A2:B2"
 	b, _ := json.Marshal(reqBody)
-	response, err := http.Post(url, "application/json", bytes.NewBuffer(b))
+	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(b))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	response, err := client.Do(req)
 	if err != nil {
 		return err
 	}
@@ -90,10 +96,18 @@ func GetSnapshot() (k, Lk, Xk, Mk, Kk *big.Int, err error) {
 
 // SaveSnapshot saves snapshot - temporary metadata required to calculate PI
 func SaveSnapshot(k, Lk, Xk, Kk, Mk string) error {
+	// we need to wrap PUT request our own
+	client := &http.Client{}
+
 	reqBody := [][]string{{k, Lk, Xk, Kk, Mk}}
-	url := "https://nalusi-b235sdkoha-de.a.run.app/nalupi?spreadsheetID=1FMUFV2z_MaccKswNLh3-x2vDeBY3RRNNzzAusjh848c&a1Range=Data"
+	url := "https://nalusi-b235sdkoha-de.a.run.app/nalupi?spreadsheetID=1FMUFV2z_MaccKswNLh3-x2vDeBY3RRNNzzAusjh848c&a1Range=Data!A2:E2"
 	b, _ := json.Marshal(reqBody)
-	response, err := http.Post(url, "application/json", bytes.NewBuffer(b))
+	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(b))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	response, err := client.Do(req)
 	if err != nil {
 		return err
 	}
@@ -120,7 +134,7 @@ func SaveFractionMeta(numerator, denominator string) error {
 
 // LoadFractionMeta sums up the fraction data (Mk*Lk)/Xk with precision as defined
 func LoadFractionMeta(precision int64) (*big.Int, error) {
-	url := "https://nalusi-b235sdkoha-de.a.run.app/nalupi?spreadsheetID=1FMUFV2z_MaccKswNLh3-x2vDeBY3RRNNzzAusjh848c&a1Range=Data!A:B"
+	url := "https://nalusi-b235sdkoha-de.a.run.app/nalupi?spreadsheetID=1EUh-4d-Xx1YQmfgdNaNsIWE5B1Q8s6WTm50UlUtHfIQ&a1Range=Data!A:B"
 	response, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -132,7 +146,8 @@ func LoadFractionMeta(precision int64) (*big.Int, error) {
 		return nil, err
 	}
 
-	pow := big.NewInt(0).Exp(big.NewInt(10), big.NewInt(precision), nil)
+	pow := big.NewInt(0)
+	pow.Exp(big.NewInt(10), big.NewInt(precision), nil)
 	res := big.NewInt(0)
 	for i := 1; i < len(respBody); i++ {
 		numerator, ok := big.NewInt(0).SetString(respBody[i][0], 10)

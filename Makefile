@@ -1,5 +1,5 @@
 service_name := nalupi
-version := 0.0.1
+version := 0.0.2
 project_id := jjkoh95
 
 go-run:
@@ -14,7 +14,7 @@ gcp-deploy-cloud-run:
 	gcloud run deploy ${service_name} \
 	--image asia.gcr.io/${project_id}/${service_name}:${version} \
 	--region=asia-east1 --platform=managed \
-	--concurrency=40 --memory 256Mi --timeout=600s --max-instances 1 --cpu 1 \
+	--concurrency=1 --memory 256Mi --timeout=600s --max-instances 1 --cpu 1 \
 	--allow-unauthenticated
 build-deploy:
 	make go-build

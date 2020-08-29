@@ -138,5 +138,5 @@ func CalculatePI() {
 	// SAME TO THE COMPUTATION TO SUM(terms)^-1
 
 	// NOTE: The n-th term is a super small value
-	panic("Not implemented")
+	panic("Not implemented, please use CalculatePIWithPrecision function instead")
 }
