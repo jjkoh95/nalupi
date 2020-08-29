@@ -7,7 +7,7 @@ go run cmd/nalupi/main.go --decimal=100
 ```
 If you have go installed, you can simply get PI value to any precision with the above command.
 
-Alternatively, you can get the last-computed PI precision from server from [here](https://nalupi-b235sdkoha-de.a.run.app/pi/trigger)
+Alternatively, you can get the last-computed PI precision from server from [here](https://nalupi-b235sdkoha-de.a.run.app/pi/current)
 
 ## Spreadsheet references
 - [Last computed PI](https://docs.google.com/spreadsheets/d/1YnXZwX5ABPmBUFhktGVLDVnmgluVgSMFjIkMyIJ8Lt0/edit#gid=0)
