@@ -119,10 +119,12 @@ func SaveSnapshot(k, Lk, Xk, Kk, Mk string) error {
 
 // SaveFractionMeta saves fraction data (Mk*Lk) and Xk
 func SaveFractionMeta(numerator, denominator string) error {
+	client := &http.Client{}
 	reqBody := [][]string{{numerator, denominator}}
-	url := "https://nalusi-b235sdkoha-de.a.run.app/nalupi?spreadsheetID=1EUh-4d-Xx1YQmfgdNaNsIWE5B1Q8s6WTm50UlUtHfIQ&a1Range=Data"
+	url := "https://nalusi-b235sdkoha-de.a.run.app/nalupi?spreadsheetID=1w7yT7uS-JmvvF9flQRQjqiX18bd9c0I30B-4x7EHLVw&a1Range=Data!A2:B2"
 	b, _ := json.Marshal(reqBody)
-	response, err := http.Post(url, "application/json", bytes.NewBuffer(b))
+	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(b))
+	response, err := client.Do(req)
 	if err != nil {
 		return err
 	}
@@ -132,36 +134,27 @@ func SaveFractionMeta(numerator, denominator string) error {
 	return errors.New("Server error")
 }
 
-// LoadFractionMeta sums up the fraction data (Mk*Lk)/Xk with precision as defined
-func LoadFractionMeta(precision int64) (*big.Int, error) {
-	url := "https://nalusi-b235sdkoha-de.a.run.app/nalupi?spreadsheetID=1EUh-4d-Xx1YQmfgdNaNsIWE5B1Q8s6WTm50UlUtHfIQ&a1Range=Data!A:B"
+// LoadFractionMeta sums up the fraction data (Mk*Lk)/Xk in the format numerator/denominator
+func LoadFractionMeta() (numerator, denominator *big.Int, err error) {
+	url := "https://nalusi-b235sdkoha-de.a.run.app/nalupi?spreadsheetID=1w7yT7uS-JmvvF9flQRQjqiX18bd9c0I30B-4x7EHLVw&a1Range=Data!A2:B2"
 	response, err := http.Get(url)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var respBody [][]string
 	body, err := ioutil.ReadAll(response.Body)
 	err = json.Unmarshal(body, &respBody)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-
-	pow := big.NewInt(0)
-	pow.Exp(big.NewInt(10), big.NewInt(precision), nil)
-	res := big.NewInt(0)
-	for i := 1; i < len(respBody); i++ {
-		numerator, ok := big.NewInt(0).SetString(respBody[i][0], 10)
-		if !ok {
-			return nil, errors.New("Unable to convert string to big.Int")
-		}
-		denominator, ok := big.NewInt(0).SetString(respBody[i][1], 10)
-		if !ok {
-			return nil, errors.New("Unable to convert string to big.Int")
-		}
-		temp := big.NewInt(0)
-		temp.Mul(numerator, pow)
-		temp.Quo(temp, denominator)
-		res.Add(res, temp)
+	var ok bool
+	numerator, ok = big.NewInt(0).SetString(respBody[0][0], 10)
+	if !ok {
+		return nil, nil, errors.New("Unable to convert string to big.Int")
 	}
-	return res, nil
+	denominator, ok = big.NewInt(0).SetString(respBody[0][1], 10)
+	if !ok {
+		return nil, nil, errors.New("Unable to convert string to big.Int")
+	}
+	return numerator, denominator, nil
 }

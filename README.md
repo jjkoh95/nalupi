@@ -12,7 +12,7 @@ Alternatively, you can get the last-computed PI precision from server from [here
 ## Spreadsheet references
 - [Last computed PI](https://docs.google.com/spreadsheets/d/1YnXZwX5ABPmBUFhktGVLDVnmgluVgSMFjIkMyIJ8Lt0/edit#gid=0)
 - [Last snapshot](https://docs.google.com/spreadsheets/d/1FMUFV2z_MaccKswNLh3-x2vDeBY3RRNNzzAusjh848c/edit#gid=0)
-- [Chudnovsky fraction metadata](https://docs.google.com/spreadsheets/d/1EUh-4d-Xx1YQmfgdNaNsIWE5B1Q8s6WTm50UlUtHfIQ/edit#gid=0)
+- [Chudnovsky fraction metadata snapshot](https://docs.google.com/spreadsheets/d/1w7yT7uS-JmvvF9flQRQjqiX18bd9c0I30B-4x7EHLVw/edit)
 
 ## References
 - [Pi in the Sky Youtube](https://youtu.be/BwkpNd2ceBk)

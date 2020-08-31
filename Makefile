@@ -1,9 +1,9 @@
 service_name := nalupi
-version := 0.0.2
+version := 0.0.3
 project_id := jjkoh95
 
 go-run:
-	go run cmd/main.go
+	go run cmd/server/main.go
 go-build:
 	CGO_ENABLED=0 GOOS=linux go build -v -o server cmd/server/main.go
 docker-build-tag:

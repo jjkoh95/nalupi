@@ -27,10 +27,15 @@ func X0() *big.Int {
 	return big.NewInt(1)
 }
 
+// Xmultiplier is the factor that X[k+1] = Xmultiplier*X[k]
+func Xmultiplier() *big.Int {
+	return big.NewInt(-262537412640768000) // int64 can hold this
+}
+
 // Xplusone computes X[k+1]
 func Xplusone(val *big.Int) *big.Int {
 	// 262537412640768000 = length of 18
-	Xd := big.NewInt(-262537412640768000) // int64 can hold this
+	Xd := Xmultiplier()
 	return big.NewInt(0).Mul(val, Xd)
 }
 

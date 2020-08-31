@@ -14,6 +14,7 @@ import (
 	"github.com/jjkoh95/nalupi/pkg/recipi"
 )
 
+// MutexStore is the struct to make sure request is handled individually without concurrency
 type MutexStore struct {
 	sync.Mutex
 	IsExecuting bool
@@ -45,9 +46,9 @@ func New() *http.Server {
 		}
 
 		mutexStore.Lock()
-		defer mutexStore.Unlock()
 		defer func() {
 			mutexStore.IsExecuting = false
+			mutexStore.Unlock()
 		}()
 		mutexStore.IsExecuting = true
 
@@ -64,8 +65,7 @@ func New() *http.Server {
 			return
 		}
 
-		fractionSum, err := recipi.LoadFractionMeta(precision + 1)
-
+		numerator, denominator, err := recipi.LoadFractionMeta()
 		if err != nil {
 			w.Write([]byte("Unable to read fraction meta"))
 			w.WriteHeader(http.StatusBadRequest)
@@ -80,21 +80,45 @@ func New() *http.Server {
 			Kk = nalupi.Kplusone(Kk)
 			k.Add(k, big.NewInt(1))
 
-			tempTerm := big.NewInt(0).Mul(Lk, Mk)
-			recipi.SaveFractionMeta(tempTerm.String(), Xk.String())
+			termNumerator := big.NewInt(0).Mul(Lk, Mk)
+			// Mk*Lk*(262537412640768000)
+			// this step is required for making common denominator
+			numerator.Mul(
+				numerator,
+				big.NewInt(0).Abs(nalupi.Xmultiplier()),
+			)
+			// Mk*Lk*(262537412640768000)
+			// we need to take into account what is the sign of Xk
+			// to determine addition or subtraction action to do here
+			if Xk.Sign() == -1 {
+				numerator.Sub(
+					numerator,
+					termNumerator,
+				)
+			} else {
+				numerator.Add(
+					numerator,
+					termNumerator,
+				)
+			}
+			denominator = Xk
+
+			// temporary term here to determine if we should proceed to the next iteration
+			tempTerm := termNumerator
 			tempTerm.Mul(tempTerm, nalupi.TenPower(precision+1))
 			tempTerm.Quo(tempTerm, Xk)
 			if tempTerm.Cmp(big.NewInt(0)) == 0 {
 				break
 			}
-			// else add to fraction
-			fractionSum.Add(fractionSum, tempTerm)
 		}
 		recipi.SaveSnapshot(k.String(), Lk.String(), Xk.String(), Mk.String(), Kk.String())
-		res := nalupi.TenPower(precision + 1)
-		res.Mul(res, nalupi.C(precision+1))
-		res.Quo(res, fractionSum)
-		recipi.SaveComputedPI(strconv.FormatInt(precision+1, 10), res.String())
+		recipi.SaveFractionMeta(numerator.String(), denominator.String())
+
+		res := nalupi.C(precision + 1)
+		res.Mul(res, big.NewInt(0).Abs(denominator))
+		res.Quo(res, numerator)
+
+		recipi.SaveComputedPI(strconv.FormatInt(precision+1, 10), res.String()[:precision+1])
 		w.Write([]byte("Ok"))
 	})
 
