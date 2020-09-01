@@ -145,3 +145,9 @@ func CalculatePI() {
 	// NOTE: The n-th term is a super small value
 	panic("Not implemented, please use CalculatePIWithPrecision function instead")
 }
+
+// GetSunRadiusInKM returns Sun Radius in KM
+// https://solarsystem.nasa.gov/solar-system/sun/by-the-numbers/
+func GetSunRadiusInKM() *big.Int {
+	return big.NewInt(695508)
+}
